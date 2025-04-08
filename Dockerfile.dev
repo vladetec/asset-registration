@@ -1,0 +1,38 @@
+# Base image
+FROM python:3.11-slim-bookworm as base
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV PIP_DEFAULT_TIMEOUT 100
+ENV PIP_DISABLE_PIP_VERSION_CHECK 1
+ENV PIP_NO_CACHE_DIR 1
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install poetry
+RUN pip install poetry==1.7.1
+
+# Copy project files
+COPY requirements.txt .
+
+# Install project dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install pytest pytest-django ruff
+
+# Copy application
+COPY . .
+
+# Port exposition
+EXPOSE 8000 
+
+# Set entrypoint
+COPY ./scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
